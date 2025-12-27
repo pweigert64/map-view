@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alpine Photo Map v16</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        html, body, #map-container { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+        #map { width: 100%; height: 100vh; z-index: 1; background: #e5e7eb; }
+
+        /* --- UI CONTROLS --- */
+        #floating-controls { 
+            position: absolute; 
+            top: 70px; 
+            right: 15px; 
+            z-index: 9999 !important; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; 
+            gap: 12px;
+        }
+        
+        #filter-controls-panel { 
+            background: white; padding: 15px; border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            min-width: 240px; display: none; flex-direction: column; gap: 12px; 
+            border: 1px solid #e5e7eb;
+        }
+
+        #filter-toggle { 
+            background: #4f46e5; color: white; width: 50px; height: 50px; 
+            border-radius: 50%; cursor: pointer; border: 3px solid white; 
+            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .filter-button { padding: 8px; font-size: 0.75rem; font-weight: 700; border-radius: 8px; cursor: pointer; border: 1px solid #d1d5db; text-align: center; width: 100%; transition: all 0.2s; }
+        .filter-button-active { background: #4f46e5; color: white; border-color: #4f46e5; }
+        .filter-button-inactive { background: #f3f4f6; color: #6b7280; }
+
+        input[type=range] { width: 100%; cursor: pointer; }
+
+        .track-label { background: rgba(255, 255, 255, 0.95); border: 2px solid #ef4444; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 800; color: #ef4444; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .emoji-marker-outer { width: 24px!important; height: 24px!important; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+        .marker-ski { background: #4f46e5; } .marker-hike { background: #b54708; } 
+        .marker-climb { background: #dc2626; } .marker-bike { background: #065f46; } .marker-bike-hike { background: #f97316; }
+        .emoji-marker-inner { font-size: 10px; background: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+        .photo-popup-img { width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+
+<div id="map-container">
+    <div id="floating-controls">
+        <button id="filter-toggle" onclick="toggleMenu(event)">⚙️</button>
+        <div id="filter-controls-panel">
+            
+            <div class="bg-indigo-50 p-3 rounded-lg flex flex-col gap-2 border border-indigo-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-indigo-900 uppercase">Current Zoom</span>
+                    <span id="zoom-display" class="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold">11</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between">
+                        <label class="text-[10px] font-bold text-indigo-900 uppercase">Switch Map at:</label>
+                        <span id="threshold-display" class="text-xs font-extrabold text-indigo-600">13</span>
+                    </div>
+                    <input type="range" id="threshold-slider" min="10" max="16" value="13" step="0.5">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase">Archive Year</label>
+                <select id="year-select" class="text-sm p-2 border rounded bg-gray-50 font-semibold"></select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button class="filter-button filter-button-active" data-activity="ski">❄️ Ski</button>
+                <button class="filter-button filter-button-active" data-activity="hike">🥾 Hike</button>
+                <button class="filter-button filter-button-active" data-activity="climb">⛰️ Climb</button>
+                <button class="filter-button filter-button-active" data-activity="bike">🚴 Bike</button>
+                <button class="filter-button filter-button-active col-span-2" data-activity="bike+hike">🚵 Bike + Hike</button>
+            </div>
+            
+            <div class="border-t pt-3 flex flex-col gap-2">
+                <label class="text-[10px] font-bold text-gray-400 uppercase">Map Overlays</label>
+                <button id="hike-layer-btn" class="filter-button filter-button-inactive text-left px-3">🏔️ Hiking Network</button>
+                <button id="bike-layer-btn" class="filter-button filter-button-inactive text-left px-3">🚲 MTB Network</button>
+                <hr class="my-1">
+                <button id="clear-tracks-btn" class="filter-button bg-red-600 text-white border-none" style="display:none;">🗑️ Clear Tracks</button>
+            </div>
+        </div>
+    </div>
+    <div id="map"></div>
+</div>
+
+<script>
+    let map, overviewLayer, detailLayer, hikingLayer, cyclingLayer;
+    let currentMarkers = [];
+    let loadedTracks = {}; 
+    let activeFilters = { ski: true, hike: true, climb: true, bike: true, 'bike+hike': true };
+    let activeYear = 'All';
+    let isInitialLoad = true;
+    let switchThreshold = 13; 
+
+    window.toggleMenu = function(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        const panel = document.getElementById('filter-controls-panel');
+        const btn = document.getElementById('filter-toggle');
+        const isOpen = panel.style.display === 'flex';
+        panel.style.display = isOpen ? 'none' : 'flex';
+        btn.style.background = isOpen ? '#4f46e5' : '#3730a3';
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const initialPoint = (typeof photoMarkers !== 'undefined' && photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47.0, 12.0];
+        
+        map = L.map('map', { 
+            center: initialPoint, 
+            zoom: 11, 
+            zoomControl: false,
+            closePopupOnClick: false 
+        });
+
+        overviewLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17, attribution: 'Map style: &copy; OpenTopoMap'
+        });
+
+        detailLayer = L.tileLayer(`https://api.maptiler.com/maps/outdoor-v4/{z}/{x}/{y}@2x.png?key=${MAPTILER_KEY}`, {
+            attribution: '&copy; MapTiler', tileSize: 512, zoomOffset: -1
+        });
+        
+        hikingLayer = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', { maxZoom: 18, zIndex: 2000 });
+        cyclingLayer = L.tileLayer('https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png', { maxZoom: 18, zIndex: 2001 });
+
+        const refreshMapTiles = () => {
+            const z = map.getZoom();
+            document.getElementById('zoom-display').innerText = z.toFixed(1);
+            if (z >= switchThreshold) {
+                if (map.hasLayer(overviewLayer)) map.removeLayer(overviewLayer);
+                if (!map.hasLayer(detailLayer)) detailLayer.addTo(map);
+            } else {
+                if (map.hasLayer(detailLayer)) map.removeLayer(detailLayer);
+                if (!map.hasLayer(overviewLayer)) overviewLayer.addTo(map);
+            }
+        };
+
+        refreshMapTiles();
+        map.on('zoomend', refreshMapTiles);
+        map.on('zoom', refreshMapTiles); // Real-time update during animation
+
+        const slider = document.getElementById('threshold-slider');
+        slider.oninput = function() {
+            switchThreshold = parseFloat(this.value);
+            document.getElementById('threshold-display').innerText = switchThreshold;
+            refreshMapTiles();
+        };
+
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        setupEventListeners();
+        populateYearDropdown();
+        renderMarkers();
+    });
+
+    function setupEventListeners() {
+        const controls = document.getElementById('floating-controls');
+        const panel = document.getElementById('filter-controls-panel');
+        L.DomEvent.disableClickPropagation(controls);
+        L.DomEvent.disableScrollPropagation(controls);
+
+        map.on('mousedown', () => { 
+            panel.style.display = 'none'; 
+            document.getElementById('filter-toggle').style.background = '#4f46e5';
+        });
+
+        document.querySelectorAll('[data-activity]').forEach(btn => {
+            btn.onclick = () => {
+                activeFilters[btn.dataset.activity] = !activeFilters[btn.dataset.activity];
+                btn.classList.toggle('filter-button-active', activeFilters[btn.dataset.activity]);
+                renderMarkers();
+            };
+        });
+
+        document.getElementById('hike-layer-btn').onclick = function() {
+            if(map.hasLayer(hikingLayer)) map.removeLayer(hikingLayer); else hikingLayer.addTo(map);
+            this.classList.toggle('filter-button-active');
+            this.classList.toggle('filter-button-inactive');
+        };
+
+        document.getElementById('bike-layer-btn').onclick = function() {
+            if(map.hasLayer(cyclingLayer)) map.removeLayer(cyclingLayer); else cyclingLayer.addTo(map);
+            this.classList.toggle('filter-button-active');
+            this.classList.toggle('filter-button-inactive');
+        };
+
+        document.getElementById('clear-tracks-btn').onclick = () => window.clearAllTracks();
+    }
+
+    window.clearAllTracks = function() {
+        Object.keys(loadedTracks).forEach(id => {
+            map.removeLayer(loadedTracks[id].layer);
+            if(loadedTracks[id].label) map.removeLayer(loadedTracks[id].label);
+        });
+        loadedTracks = {};
+        updateUI();
+    };
+
+    window.loadGpxTrack = function(markerIndex) {
+        const data = photoMarkers[markerIndex];
+        if (loadedTracks[markerIndex]) {
+            map.removeLayer(loadedTracks[markerIndex].layer);
+            if(loadedTracks[markerIndex].label) map.removeLayer(loadedTracks[markerIndex].label);
+            delete loadedTracks[markerIndex];
+            updateUI();
+        } else {
+            fetch(data.gpxUrl).then(res => res.text()).then(gpxXml => {
+                const trackLayer = new L.GPX(gpxXml, {
+                    async: true,
+                    marker_options: { startIconUrl: '', endIconUrl: '', shadowUrl: '' },
+                    polyline_options: { color: '#ef4444', weight: 4, opacity: 0.85 }
+                }).on('loaded', function(e) {
+                    const bounds = e.target.getBounds();
+                    
+                    // FLY-TO with SMART ZOOM LIMIT
+                    map.flyToBounds(bounds, { 
+                        padding: [80, 80], 
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+
+                    // Listen once for the end of the flyTo to check zoom
+                    map.once('moveend', () => {
+                        const MAX_ZOOM = 14;
+                        if (map.getZoom() > MAX_ZOOM) {
+                            map.setZoom(MAX_ZOOM, { animate: true });
+                        }
+                    });
+
+                    const label = L.tooltip({ permanent: true, direction: 'center', className: 'track-label' })
+                        .setContent(data.title).setLatLng(bounds.getCenter()).addTo(map);
+                        
+                    loadedTracks[markerIndex] = { layer: trackLayer, label: label };
+                    updateUI();
+                }).addTo(map);
+            });
+        }
+    };
+
+    function updateUI() {
+        renderMarkers();
+        const clearBtn = document.getElementById('clear-tracks-btn');
+        const count = Object.keys(loadedTracks).length;
+        clearBtn.style.display = count > 0 ? 'block' : 'none';
+        clearBtn.innerText = `🗑️ Clear ${count} Track(s)`;
+    }
+
+    function renderMarkers() {
+        let openPopupId = null;
+        currentMarkers.forEach((m) => { if(m.getPopup().isOpen()) openPopupId = m._originalIdx; map.removeLayer(m); });
+        currentMarkers = [];
+        const filtered = photoMarkers.filter(p => activeFilters[p.activity] && (activeYear === 'All' || p.year.toString() === activeYear));
+        filtered.forEach((p, index) => {
+            const origIdx = photoMarkers.indexOf(p);
+            const isTrackActive = !!loadedTracks[origIdx];
+            const icon = L.divIcon({
+                className: `emoji-marker-outer marker-${p.activity.replace('+', '-')}`,
+                html: `<span class="emoji-marker-inner">${p.activity === 'ski' ? '❄️' : p.activity === 'hike' ? '🥾' : p.activity === 'climb' ? '⛰️' : p.activity === 'bike' ? '🚴' : '🚵'}</span>`,
+                iconSize: [24, 24]
+            });
+            const content = `<div class="p-1 min-w-[160px]">
+                ${p.imageUrl ? `<img src="${p.imageUrl}" class="photo-popup-img">` : ''}
+                <div class="text-sm mb-1"><strong>${p.title}</strong></div>
+                <button class="bg-indigo-600 text-white p-2 w-full rounded text-[10px] font-bold uppercase mb-1" onclick="window.open('${p.googlePhotosUrl}')">Photos</button>
+                ${p.gpxUrl ? `<button class="${isTrackActive ? 'bg-gray-500' : 'bg-emerald-600'} text-white p-2 w-full rounded text-[10px] font-bold uppercase" onclick="loadGpxTrack(${origIdx})">${isTrackActive ? 'Hide Track' : '🗺️ Show Track'}</button>` : ''}
+            </div>`;
+            const m = L.marker([p.lat, p.lon], { icon }).bindPopup(content).addTo(map);
+            m._originalIdx = origIdx;
+            currentMarkers.push(m);
+            if ((isInitialLoad && index === 0) || (openPopupId === origIdx)) m.openPopup();
+        });
+        isInitialLoad = false;
+    }
+
+    function populateYearDropdown() {
+        const select = document.getElementById('year-select');
+        const years = ['All', ...new Set(photoMarkers.map(p => p.year.toString()))].sort().reverse();
+        years.forEach(y => select.add(new Option(y, y)));
+        select.onchange = (e) => { activeYear = e.target.value; renderMarkers(); };
+    }
+</script>
+</body>
+</html>
