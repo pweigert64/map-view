@@ -50,14 +50,46 @@
 
         .track-label { background: rgba(255, 255, 255, 0.95); border: 2px solid #ef4444; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 800; color: #ef4444; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
+        /* --- MARKERS --- */
         .emoji-marker-outer { width: 24px!important; height: 24px!important; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
         .marker-ski { background: #4f46e5; } .marker-hike { background: #b54708; } 
         .marker-climb { background: #dc2626; } .marker-bike { background: #065f46; } .marker-bike-hike { background: #f97316; }
         .emoji-marker-inner { font-size: 10px; background: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
         .photo-popup-img { width: 100%; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+
+        /* --- PHOTO OVERLAY --- */
+        #photo-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 20000; /* Higher than map controls */
+            display: none;
+            flex-direction: column;
+        }
+        #overlay-bar {
+            background: #4f46e5; color: white;
+            padding: 15px; display: flex; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
+
+<div id="photo-overlay">
+    <div id="overlay-bar">
+        <button onclick="closePhotos()" class="bg-white text-indigo-600 px-4 py-1 rounded font-bold">← Back to Map</button>
+        <span id="overlay-title" class="ml-4 font-bold truncate">Album</span>
+    </div>
+    <div class="flex-grow flex flex-col items-center justify-center p-10 text-center">
+        <div id="album-icon" class="text-6xl mb-4">📸</div>
+        <h2 id="album-name" class="text-2xl font-bold mb-2"></h2>
+        <p class="text-gray-600 mb-8 max-w-md">To maintain the best viewing experience, Google Photos albums open in a secure full-screen window.</p>
+        <a id="album-link" href="#" target="_blank" class="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 transition-colors">
+            View Google Photos Album
+        </a>
+        <p class="mt-8 text-sm text-gray-400 font-medium italic">Simply return to this tab to continue exploring the map.</p>
+    </div>
+</div>
 
 <div id="map-container">
     <div id="floating-controls">
@@ -111,6 +143,18 @@
     let activeYear = 'All';
     let isInitialLoad = true;
     let switchThreshold = 13; 
+
+    /* --- OVERLAY LOGIC --- */
+    window.openPhotos = function(url, title) {
+        document.getElementById('photo-overlay').style.display = 'flex';
+        document.getElementById('overlay-title').innerText = title;
+        document.getElementById('album-name').innerText = title;
+        document.getElementById('album-link').href = url;
+    };
+
+    window.closePhotos = function() {
+        document.getElementById('photo-overlay').style.display = 'none';
+    };
 
     window.toggleMenu = function(e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -268,16 +312,21 @@
                 iconSize: [24, 24]
             });
 
-            // CONDITIONAL BUTTON LOGIC
             const content = `<div class="p-1 min-w-[160px]">
                 ${p.imageUrl ? `<img src="${p.imageUrl}" class="photo-popup-img">` : ''}
-                <div class="text-sm mb-1"><strong>${p.title}</strong></div>
+                <div class="text-sm mb-1 text-center"><strong>${p.title}</strong></div>
                 
                 ${(p.googlePhotosUrl && p.googlePhotosUrl.trim() !== "") ? 
-                    `<button class="bg-indigo-600 text-white p-2 w-full rounded text-[10px] font-bold uppercase mb-1" onclick="window.open('${p.googlePhotosUrl}')">Photos</button>` : ''}
+                    `<button class="bg-indigo-600 text-white p-2 w-full rounded text-[10px] font-bold uppercase mb-1" 
+                        onclick="openPhotos('${p.googlePhotosUrl}', '${p.title.replace(/'/g, "\\'")}')">
+                        Photos
+                    </button>` : ''}
                 
                 ${(p.gpxUrl && p.gpxUrl.trim() !== "") ? 
-                    `<button class="${isTrackActive ? 'bg-gray-500' : 'bg-emerald-600'} text-white p-2 w-full rounded text-[10px] font-bold uppercase" onclick="loadGpxTrack(${origIdx})">${isTrackActive ? 'Hide Track' : '🗺️ Show Track'}</button>` : ''}
+                    `<button class="${isTrackActive ? 'bg-gray-500' : 'bg-emerald-600'} text-white p-2 w-full rounded text-[10px] font-bold uppercase" 
+                        onclick="loadGpxTrack(${origIdx})">
+                        ${isTrackActive ? 'Hide Track' : '🗺️ Show Track'}
+                    </button>` : ''}
             </div>`;
 
             const m = L.marker([p.lat, p.lon], { icon }).bindPopup(content).addTo(map);
