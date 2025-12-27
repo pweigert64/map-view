@@ -241,10 +241,9 @@
 	{ lat: 47.69445, lon: 13.28468, title: "1910-Faistenau: Bergalm & Bergköpfl", activity: 'bike+hike', year: 2019, googlePhotosUrl: "https://photos.app.goo.gl/TiER4C1eMkisHiVs7"},
 	{ lat: 47.67487, lon: 13.30157, title: "1910-Faistenau: Hike:Tiefenbach-Regenspitze-Gruberhorn-Gennerhorn-Lämmerbach-per Bike nach Faistenau", activity: 'bike+hike', year: 2019, googlePhotosUrl: "https://photos.app.goo.gl/TiER4C1eMkisHiVs7"},
 	{ lat: 47.74244, lon: 13.29221, title: "1910-Faistenauer Schafberg: Faistenau-Oberwiesalm-Schafberg-Schafbachalm-Hintersee-Faistenau", activity: 'bike+hike', year: 2019, googlePhotosUrl: "https://photos.app.goo.gl/TiER4C1eMkisHiVs7"},
-
-
-
-	
+/*
+* GAP GAP GAP
+*/
 	{ lat: 47.47419, lon: 13.58522, title: "1604-Torstein da capo", activity: 'ski', year: 2016, googlePhotosUrl: "https://goo.gl/photos/ePNV1zCUG4P71jeV6"}, 
-	{ lat: 47.472282, lon: 13.617007, title: "1410-Dirndl Überschreitung", activity: 'climb', year: 2014, googlePhotosUrl: "https://goo.47.46023/14.26482gl/photos/dFCvyKpCTQo2ihyT9" } 
+	{ lat: 47.472282, lon: 13.617007, title: "1410-Dirndl Überschreitung", activity: 'climb', year: 2014, googlePhotosUrl: "https://goo.gl/photos/dFCvyKpCTQo2ihyT9"}
 ];
