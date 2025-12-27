@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 	
-	<script src="config.js"></script>
+    <script src="config.js"></script>
     <script src="data.js"></script>
 	
     <style>
@@ -122,12 +122,10 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-		//alert("Check: " + (typeof photoMarkers !== 'undefined' ? "Data Found!" : "Data MISSING"));
-
-		if (typeof photoMarkers === 'undefined') {
-			console.error("Data.js not found!"); return;
-		}
-        const initialPoint = (typeof photoMarkers !== 'undefined' && photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47.0, 12.0];
+        if (typeof photoMarkers === 'undefined') {
+            console.error("Data.js not found!"); return;
+        }
+        const initialPoint = (photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47.0, 12.0];
         
         map = L.map('map', { 
             center: initialPoint, 
@@ -161,7 +159,7 @@
 
         refreshMapTiles();
         map.on('zoomend', refreshMapTiles);
-        map.on('zoom', refreshMapTiles); // Real-time update during animation
+        map.on('zoom', refreshMapTiles);
 
         const slider = document.getElementById('threshold-slider');
         slider.oninput = function() {
@@ -234,25 +232,12 @@
                     polyline_options: { color: '#ef4444', weight: 4, opacity: 0.85 }
                 }).on('loaded', function(e) {
                     const bounds = e.target.getBounds();
-                    
-                    // FLY-TO with SMART ZOOM LIMIT
-                    map.flyToBounds(bounds, { 
-                        padding: [80, 80], 
-                        duration: 1.5,
-                        easeLinearity: 0.25
-                    });
-
-                    // Listen once for the end of the flyTo to check zoom
+                    map.flyToBounds(bounds, { padding: [80, 80], duration: 1.5 });
                     map.once('moveend', () => {
-                        const MAX_ZOOM = 14;
-                        if (map.getZoom() > MAX_ZOOM) {
-                            map.setZoom(MAX_ZOOM, { animate: true });
-                        }
+                        if (map.getZoom() > 14) map.setZoom(14, { animate: true });
                     });
-
                     const label = L.tooltip({ permanent: true, direction: 'center', className: 'track-label' })
                         .setContent(data.title).setLatLng(bounds.getCenter()).addTo(map);
-                        
                     loadedTracks[markerIndex] = { layer: trackLayer, label: label };
                     updateUI();
                 }).addTo(map);
@@ -273,6 +258,7 @@
         currentMarkers.forEach((m) => { if(m.getPopup().isOpen()) openPopupId = m._originalIdx; map.removeLayer(m); });
         currentMarkers = [];
         const filtered = photoMarkers.filter(p => activeFilters[p.activity] && (activeYear === 'All' || p.year.toString() === activeYear));
+        
         filtered.forEach((p, index) => {
             const origIdx = photoMarkers.indexOf(p);
             const isTrackActive = !!loadedTracks[origIdx];
@@ -281,12 +267,19 @@
                 html: `<span class="emoji-marker-inner">${p.activity === 'ski' ? '❄️' : p.activity === 'hike' ? '🥾' : p.activity === 'climb' ? '⛰️' : p.activity === 'bike' ? '🚴' : '🚵'}</span>`,
                 iconSize: [24, 24]
             });
+
+            // CONDITIONAL BUTTON LOGIC
             const content = `<div class="p-1 min-w-[160px]">
                 ${p.imageUrl ? `<img src="${p.imageUrl}" class="photo-popup-img">` : ''}
                 <div class="text-sm mb-1"><strong>${p.title}</strong></div>
-                <button class="bg-indigo-600 text-white p-2 w-full rounded text-[10px] font-bold uppercase mb-1" onclick="window.open('${p.googlePhotosUrl}')">Photos</button>
-                ${p.gpxUrl ? `<button class="${isTrackActive ? 'bg-gray-500' : 'bg-emerald-600'} text-white p-2 w-full rounded text-[10px] font-bold uppercase" onclick="loadGpxTrack(${origIdx})">${isTrackActive ? 'Hide Track' : '🗺️ Show Track'}</button>` : ''}
+                
+                ${(p.googlePhotosUrl && p.googlePhotosUrl.trim() !== "") ? 
+                    `<button class="bg-indigo-600 text-white p-2 w-full rounded text-[10px] font-bold uppercase mb-1" onclick="window.open('${p.googlePhotosUrl}')">Photos</button>` : ''}
+                
+                ${(p.gpxUrl && p.gpxUrl.trim() !== "") ? 
+                    `<button class="${isTrackActive ? 'bg-gray-500' : 'bg-emerald-600'} text-white p-2 w-full rounded text-[10px] font-bold uppercase" onclick="loadGpxTrack(${origIdx})">${isTrackActive ? 'Hide Track' : '🗺️ Show Track'}</button>` : ''}
             </div>`;
+
             const m = L.marker([p.lat, p.lon], { icon }).bindPopup(content).addTo(map);
             m._originalIdx = origIdx;
             currentMarkers.push(m);
