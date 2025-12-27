@@ -122,6 +122,11 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+		alert("Check: " + (typeof photoMarkers !== 'undefined' ? "Data Found!" : "Data MISSING"));
+
+		if (typeof photoMarkers === 'undefined') {
+			console.error("Data.js not found!"); return;
+		}
         const initialPoint = (typeof photoMarkers !== 'undefined' && photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47.0, 12.0];
         
         map = L.map('map', { 
