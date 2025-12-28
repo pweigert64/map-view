@@ -8,15 +8,15 @@
 	{ lat: 47.799225, lon: 13.650942, title: "2512-Segenbaumkogel", activity: 'bike+hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/Nc2UMneQNPvqTCJk7",imageUrl:
 	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2512-Segenbaumkogel.jpg",gpxUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2512-Segenbaumkogel.gpx"},
 	{ lat: 47.79231, lon: 13.88650, title: "2511-Steinberg(Ebensee-Grünau)", activity: 'bike+hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/fD8gxU82J7MWLQcm7",imageUrl:
-	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-Steinberg.jpg",gpxUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-mtb_steinberg-grünau.gpx.gpx"},
+	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-Steinberg.jpg",gpxUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-mtb_steinberg-grünau.gpx"},
 	{ lat: 47.823291, lon: 13.772875, title: "2511-Gr. Sonnstein", activity: 'hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/1PjEtK46C6ykqPTE7",imageUrl:
 	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-Sonnstein.jpg"},
 	{ lat: 47.69964, lon: 13.67815, title: "2511-Gamskogel via Spiegelwand", activity: 'bike+hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/gaWs5HzvYCo4KWtt8",imageUrl:
-	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-Gamskogel.jpg"},
+	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2511-Gamskogel.jpg",gpxUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/251105_mtb_ischl-gamskogel.gpx"},
 	{ lat: 47.654841, lon: 14.298690, title: "2510-Stubwies Nizhoni", activity: 'climb', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/Rej4nZcxfXadQxCn6",imageUrl:
 	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2510-Stubwies-Nizhoni.jpg"},
 	{ lat: 47.63338, lon: 14.051584, title: "2510-Kraxenberg Südwandband", activity: 'hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/9xkMXBZ4hofZMtkt6",imageUrl:
-	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2510-Kraxenberg.jpg"},
+	"https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2510-Kraxenberg.jpg",gpxUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/251023-hike_kraxenberg_südwandband.gpx"},
 	{ lat: 47.66961, lon: 13.51421, title: "2510-Bergwerkskogel (via Chorinsky Klause)", activity: 'hike', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/RtqWsqmQ2hD17Nua6",imageUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2510-Bergwerkskogel.jpg"},
 	{ lat: 47.538862, lon: 14.058573, title: "2510-Gindlhorn SW-Pfeiler", activity: 'climb', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/UYJj9FVEpUzBbpQNA" },
 	{ lat: 47.646151, lon: 13.813323, title: "2510-Trisselwand Stüger", activity: 'climb', year: 2025, googlePhotosUrl: "https://photos.app.goo.gl/UYJj9FVEpUzBbpQNA",imageUrl: "https://raw.githubusercontent.com/pweigert64/tourenbuch/main/2025/2510-St%C3%BCgerweg.jpg"},
