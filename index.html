@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alpine Photo Map v21</title>
+    <title>Alpine Photo Map v22</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
@@ -11,12 +11,7 @@
 	
     <script src="config.js"></script>
     
-    <script>
-        // Force the browser to get the freshest data.js
-        const dataScript = document.createElement('script');
-        dataScript.src = "data.js?v=" + Date.now();
-        document.head.appendChild(dataScript);
-    </script>
+    <script src="data.js?v=999"></script>
 	
     <style>
         html, body, #map-container { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
@@ -41,11 +36,8 @@
     <div id="floating-controls">
         <button id="filter-toggle" onclick="toggleMenu(event)">⚙️</button>
         <div id="filter-controls-panel">
-            <div class="bg-indigo-50 p-3 rounded-lg flex flex-col gap-2 border border-indigo-100">
-                <div class="flex justify-between items-center text-[10px] font-bold text-indigo-900 uppercase">
-                    <span>Switch Map @</span>
-                    <span id="threshold-display" class="bg-indigo-600 text-white px-2 py-0.5 rounded">13</span>
-                </div>
+            <div class="bg-indigo-50 p-3 rounded-lg flex flex-col gap-2 border border-indigo-100 text-[10px] font-bold">
+                <div class="flex justify-between"><span>Switch @</span><span id="threshold-display">13</span></div>
                 <input type="range" id="threshold-slider" min="10" max="16" value="13" step="0.5" class="w-full">
             </div>
             <select id="year-select" class="text-sm p-2 border rounded bg-gray-50 font-bold"></select>
@@ -57,9 +49,9 @@
                 <button class="filter-button filter-button-active col-span-2" data-activity="bike+hike">🚵 Bike + Hike</button>
             </div>
             <div class="border-t pt-3 flex flex-col gap-2">
-                <button id="hike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🏔️ HIKING NETWORK</button>
-                <button id="bike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🚲 MTB NETWORK</button>
-                <button id="clear-tracks-btn" class="filter-button bg-red-600 text-white border-none mt-1" style="display:none;">🗑️ CLEAR TRACKS</button>
+                <button id="hike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🏔️ HIKING</button>
+                <button id="bike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🚲 MTB</button>
+                <button id="clear-tracks-btn" class="filter-button bg-red-600 text-white border-none" style="display:none;">🗑️ CLEAR TRACKS</button>
             </div>
         </div>
     </div>
@@ -67,6 +59,7 @@
 </div>
 
 <script>
+    // Variables
     let map, overviewLayer, detailLayer, hikingLayer, cyclingLayer;
     let currentMarkers = [];
     let loadedTracks = {}; 
@@ -75,9 +68,13 @@
     let isInitialLoad = true;
     let switchThreshold = 13; 
 
+    // Helper: Build Full URL
     const getFullUrl = (val, base) => {
         if (!val || val.trim() === "") return null;
-        return (val.startsWith('http')) ? val : base + val;
+        if (val.startsWith('http')) return val;
+        // If your data.js has BASE_IMG, etc., use them. If not, return null.
+        const prefix = (base && typeof base !== 'undefined') ? base : "";
+        return prefix + val;
     };
 
     window.toggleMenu = function(e) {
@@ -85,45 +82,23 @@
         panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
     };
 
-    // --- THE FIX: WAIT FOR DATA ---
-    function checkDataAndInit() {
-        if (typeof photoMarkers !== 'undefined') {
-            console.log("Data loaded! Initializing map...");
-            initMap();
-        } else {
-            console.log("Waiting for data.js...");
-            setTimeout(checkDataAndInit, 50); // Check every 50ms
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof photoMarkers === 'undefined') {
+            alert("ERROR: photoMarkers not found in data.js. Check your data.js file for typos!");
+            return;
         }
-    }
-
-    document.addEventListener('DOMContentLoaded', checkDataAndInit);
+        initMap();
+    });
 
     function initMap() {
-        const initialPoint = (photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47.0, 12.0];
-        map = L.map('map', { center: initialPoint, zoom: 11, zoomControl: false, closePopupOnClick: false });
+        const startPos = (photoMarkers.length > 0) ? [photoMarkers[0].lat, photoMarkers[0].lon] : [47, 13];
+        map = L.map('map', { center: startPos, zoom: 11, zoomControl: false, closePopupOnClick: false });
 
-        overviewLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+        overviewLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 }).addTo(map);
         detailLayer = L.tileLayer(`https://api.maptiler.com/maps/outdoor-v4/{z}/{x}/{y}@2x.png?key=${MAPTILER_KEY}`, { tileSize: 512, zoomOffset: -1 });
-        hikingLayer = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', { zIndex: 2000 });
-        cyclingLayer = L.tileLayer('https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png', { zIndex: 2001 });
-
-        const checkTiles = () => {
-            const z = map.getZoom();
-            if (z >= switchThreshold) {
-                if (!map.hasLayer(detailLayer)) { detailLayer.addTo(map); map.removeLayer(overviewLayer); }
-            } else {
-                if (!map.hasLayer(overviewLayer)) { overviewLayer.addTo(map); map.removeLayer(detailLayer); }
-            }
-        };
-
-        map.on('zoomend zoom', checkTiles);
-        checkTiles();
-
-        document.getElementById('threshold-slider').oninput = function() {
-            switchThreshold = parseFloat(this.value);
-            document.getElementById('threshold-display').innerText = switchThreshold;
-            checkTiles();
-        };
+        hikingLayer = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png');
+        cyclingLayer = L.tileLayer('https://tile.waymarkedtrails.org/mtb/{z}/{x}/{y}.png');
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         setupEvents();
@@ -157,7 +132,9 @@
 
     window.loadGpxTrack = function(idx) {
         const p = photoMarkers[idx];
-        const url = getFullUrl(p.gpx, BASE_GPX);
+        // Use p.gpxUrl (old) or p.gpx (new) depending on your data.js
+        const url = p.gpxUrl || getFullUrl(p.gpx, (typeof BASE_GPX !== 'undefined' ? BASE_GPX : ""));
+        
         if (loadedTracks[idx]) {
             map.removeLayer(loadedTracks[idx].layer);
             map.removeLayer(loadedTracks[idx].label);
@@ -195,22 +172,24 @@
         .forEach((p, i) => {
             const idx = photoMarkers.indexOf(p);
             const active = !!loadedTracks[idx];
-            const img = getFullUrl(p.img, BASE_IMG);
-            const alb = getFullUrl(p.album, BASE_PHOTOS);
+            
+            // Handle both old (imageUrl) and new (img) keys
+            const img = p.imageUrl || getFullUrl(p.img, (typeof BASE_IMG !== 'undefined' ? BASE_IMG : ""));
+            const alb = p.googlePhotosUrl || getFullUrl(p.album, (typeof BASE_PHOTOS !== 'undefined' ? BASE_PHOTOS : ""));
 
             const icon = L.divIcon({
                 className: `emoji-marker-outer marker-${p.activity.replace('+', '-')}`,
-                html: `<span class="emoji-marker-inner">${p.activity === 'ski' ? '❄️' : p.activity === 'hike' ? '🥾' : p.activity === 'climb' ? '⛰️' : p.activity === 'bike' ? '🚴' : '🚵'}</span>`,
+                html: `<span class="emoji-marker-inner">${p.activity === 'ski' ? '❄️' : p.activity === 'hike' ? '🥾' : '⛰️'}</span>`,
                 iconSize: [24, 24]
             });
 
             const content = `
                 <div class="p-1 min-w-[180px]">
-                    ${img ? `<img src="${img}" class="photo-popup-img shadow-sm">` : ''}
-                    <div class="text-[12px] font-bold text-gray-900 mb-3 leading-tight">${p.title}</div>
+                    ${img ? `<img src="${img}" class="photo-popup-img">` : ''}
+                    <div class="text-[12px] font-bold text-gray-900 mb-3">${p.title}</div>
                     <div class="flex gap-1.5">
-                        ${alb ? `<a href="${alb}" target="_blank" class="flex-1 bg-[#1e1b4b] text-white flex items-center justify-center py-2.5 rounded text-[10px] font-black no-underline shadow-sm hover:bg-black transition-colors">📸 PHOTOS</a>` : ''}
-                        ${p.gpx ? `<button onclick="loadGpxTrack(${idx})" class="flex-1 ${active ? 'bg-gray-600' : 'bg-emerald-700'} text-white flex items-center justify-center py-2.5 rounded text-[10px] font-black shadow-sm transition-all">${active ? '❌ HIDE' : '🗺️ TRACK'}</button>` : ''}
+                        ${alb ? `<a href="${alb}" target="_blank" class="flex-1 bg-[#1e1b4b] text-white flex items-center justify-center py-2 rounded text-[10px] font-black no-underline">📸 PHOTOS</a>` : ''}
+                        ${(p.gpxUrl || p.gpx) ? `<button onclick="loadGpxTrack(${idx})" class="flex-1 ${active ? 'bg-gray-600' : 'bg-emerald-700'} text-white py-2 rounded text-[10px] font-black">${active ? '❌ HIDE' : '🗺️ TRACK'}</button>` : ''}
                     </div>
                 </div>`;
 
