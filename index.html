@@ -3,37 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alpine Photo Map v23</title>
+    <title>Alpine Photo Map v24</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 	
     <script src="config.js"></script>
-    <script src="data.js?v=20251231"></script>
+    <script src="data.js?v=2025_FINAL"></script>
 	
     <style>
+        /* 1. LAYOUT & MAP */
         html, body, #map-container { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
         #map { width: 100%; height: 100vh; z-index: 1; background: #e5e7eb; }
+
+        /* 2. NAVIGATION PANELS */
         #floating-controls { position: absolute; top: 70px; right: 15px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
         #filter-controls-panel { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); min-width: 240px; display: none; flex-direction: column; gap: 12px; border: 1px solid #e5e7eb; }
         #filter-toggle { background: #4f46e5; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid white; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        
+
+        /* 3. FILTER BUTTONS */
         .filter-button { padding: 8px; font-size: 0.75rem; font-weight: 700; border-radius: 8px; cursor: pointer; border: 1px solid #d1d5db; text-align: center; width: 100%; transition: all 0.2s; }
         .filter-button-active { background: #4f46e5; color: white; border-color: #4f46e5; }
         .filter-button-inactive { background: #f3f4f6; color: #6b7280; }
 
-        /* Marker Styles */
+        /* 4. MARKER STYLES & COLORS */
         .emoji-marker-outer { width: 24px!important; height: 24px!important; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+        
+        /* Activity Specific Colors */
         .marker-ski { background: #4f46e5; } 
         .marker-hike { background: #b54708; } 
         .marker-climb { background: #dc2626; } 
         .marker-bike { background: #065f46; } 
         .marker-bike-hike { background: #f97316; }
-        
+
         .emoji-marker-inner { font-size: 10px; background: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+
+        /* 5. POPUP ELEMENTS */
         .photo-popup-img { width: 100%; border-radius: 0.4rem; margin-bottom: 0.6rem; object-fit: cover; height: 110px; display: block; }
         .track-label { background: rgba(255, 255, 255, 0.95); border: 2px solid #ef4444; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 800; color: #ef4444; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* 6. POPUP BUTTONS (Midnight High Contrast) */
+        .btn-photos-custom {
+            background-color: #1e1b4b !important; /* Deep Midnight */
+            color: #ffffff !important;           /* Guaranteed White */
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-decoration: none !important;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .btn-photos-custom:hover { background-color: #000000 !important; }
+        .btn-photos-custom span { color: #ffffff !important; } /* Force child text white */
     </style>
 </head>
 <body>
@@ -43,10 +67,12 @@
         <button id="filter-toggle" onclick="toggleMenu(event)">⚙️</button>
         <div id="filter-controls-panel">
             <div class="bg-indigo-50 p-3 rounded-lg flex flex-col gap-2 border border-indigo-100 text-[10px] font-bold">
-                <div class="flex justify-between"><span>Switch @</span><span id="threshold-display">13</span></div>
+                <div class="flex justify-between"><span>Switch Map @</span><span id="threshold-display">13</span></div>
                 <input type="range" id="threshold-slider" min="10" max="16" value="13" step="0.5" class="w-full">
             </div>
+            
             <select id="year-select" class="text-sm p-2 border rounded bg-gray-50 font-bold"></select>
+            
             <div class="grid grid-cols-2 gap-2">
                 <button class="filter-button filter-button-active" data-activity="ski">❄️ Ski</button>
                 <button class="filter-button filter-button-active" data-activity="hike">🥾 Hike</button>
@@ -54,9 +80,10 @@
                 <button class="filter-button filter-button-active" data-activity="bike">🚴 Bike</button>
                 <button class="filter-button filter-button-active col-span-2" data-activity="bike+hike">🚵 Bike + Hike</button>
             </div>
+            
             <div class="border-t pt-3 flex flex-col gap-2">
-                <button id="hike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🏔️ HIKING NETWORK</button>
-                <button id="bike-layer-btn" class="filter-button filter-button-inactive text-left px-3 text-[10px]">🚲 MTB NETWORK</button>
+                <button id="hike-layer-btn" class="filter-button filter-button-inactive text-[10px]">🏔️ HIKING NETWORK</button>
+                <button id="bike-layer-btn" class="filter-button filter-button-inactive text-[10px]">🚲 MTB NETWORK</button>
                 <button id="clear-tracks-btn" class="filter-button bg-red-600 text-white border-none mt-1" style="display:none;">🗑️ CLEAR TRACKS</button>
             </div>
         </div>
@@ -73,6 +100,7 @@
     let isInitialLoad = true;
     let switchThreshold = 13; 
 
+    // Helper to get full URLs
     const getFullUrl = (val, base) => {
         if (!val || val.trim() === "") return null;
         if (val.startsWith('http')) return val;
@@ -86,7 +114,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         if (typeof photoMarkers === 'undefined') {
-            alert("Error: data.js not found or contains errors.");
+            alert("Data not loaded. Check data.js file.");
             return;
         }
         initMap();
@@ -184,7 +212,14 @@
         
         document.getElementById('clear-tracks-btn').style.display = Object.keys(loadedTracks).length > 0 ? 'block' : 'none';
 
-        const iconsMap = { 'ski': '❄️', 'hike': '🥾', 'climb': '⛰️', 'bike': '🚴', 'bike+hike': '🚵' };
+        // 1. ICON MAPPING (FIXES MOUNTAIN VS BIKE ICON)
+        const iconsMap = { 
+            'ski': '❄️', 
+            'hike': '🥾', 
+            'climb': '⛰️', 
+            'bike': '🚴', 
+            'bike+hike': '🚵' 
+        };
 
         photoMarkers.filter(p => activeFilters[p.activity] && (activeYear === 'All' || p.year.toString() === activeYear))
         .forEach((p, i) => {
@@ -202,13 +237,21 @@
                 iconSize: [24, 24]
             });
 
+            // 2. COMPACT POPUP LAYOUT (FIXES WHITE TEXT & SIDE-BY-SIDE)
             const content = `
                 <div class="p-1 min-w-[180px]">
                     ${img ? `<img src="${img}" class="photo-popup-img">` : ''}
                     <div class="text-[12px] font-bold text-gray-900 mb-3">${p.title}</div>
                     <div class="flex gap-1.5">
-                        ${alb ? `<a href="${alb}" target="_blank" class="flex-1 bg-[#1e1b4b] text-white flex items-center justify-center py-2 rounded text-[10px] font-bold no-underline shadow-sm hover:opacity-90">📸 PHOTOS ↗</a>` : ''}
-                        ${(p.gpxUrl || p.gpx) ? `<button onclick="loadGpxTrack(${idx})" class="flex-1 ${active ? 'bg-gray-600' : 'bg-emerald-700'} text-white py-2 rounded text-[10px] font-bold shadow-sm transition-all">${active ? '❌ HIDE' : '🗺️ TRACK'}</button>` : ''}
+                        ${alb ? `
+                            <a href="${alb}" target="_blank" class="flex-1 btn-photos-custom py-2 rounded text-[10px] font-bold shadow-sm">
+                                <span>📸 PHOTOS</span>
+                                <span style="font-size: 11px;">🔗</span>
+                            </a>` : ''}
+                        ${(p.gpxUrl || p.gpx) ? `
+                            <button onclick="loadGpxTrack(${idx})" class="flex-1 ${active ? 'bg-gray-600' : 'bg-emerald-700'} text-white py-2 rounded text-[10px] font-bold shadow-sm">
+                                ${active ? '❌ HIDE' : '🗺️ TRACK'}
+                            </button>` : ''}
                     </div>
                 </div>`;
 
